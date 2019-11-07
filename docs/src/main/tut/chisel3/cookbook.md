@@ -27,76 +27,66 @@ Please note that these examples make use of [Chisel's scala-style printing](Prin
 
 ### How do I create a UInt from an instance of a Bundle?
 
-Call asUInt on the Bundle instance.
+Call [`asUInt`](https://www.chisel-lang.org/api/latest/chisel3/Bundle.html#asUInt():chisel3.UInt) on the [`Bundle`](https://www.chisel-lang.org/api/latest/chisel3/Bundle.html) instance.
 
-```scala
-  // Example
-  class MyBundle extends Bundle {
-    val foo = UInt(4.W)
-    val bar = UInt(4.W)
-  }
+```scala mdoc:silent:reset
+import chisel3._
+
+class MyBundle extends Bundle {
+  val foo = UInt(4.W)
+  val bar = UInt(4.W)
+}
+
+class Foo extends RawModule {
   val bundle = Wire(new MyBundle)
   bundle.foo := 0xc.U
   bundle.bar := 0x3.U
   val uint = bundle.asUInt
-  printf(p"$uint") // 195
-
-  // Test
-  assert(uint === 0xc3.U)
+}
 ```
 
 ### How do I create a Bundle from a UInt?
 
-On an instance of the Bundle, call the method fromBits with the UInt as the argument
+Use the [`asTypeOf`](https://www.chisel-lang.org/api/latest/chisel3/UInt.html#asTypeOf[T%3C:chisel3.Data](that:T):T) method to reinterpret the [`UInt`](https://www.chisel-lang.org/api/latest/chisel3/UInt.html) as the type of the [`Bundle`](https://www.chisel-lang.org/api/latest/chisel3/Bundle.html).
 
-```scala
-  // Example
-  class MyBundle extends Bundle {
-    val foo = UInt(4.W)
-    val bar = UInt(4.W)
-  }
+```scala mdoc:silent:reset
+import chisel3._
+
+class MyBundle extends Bundle {
+  val foo = UInt(4.W)
+  val bar = UInt(4.W)
+}
+
+class Foo extends RawModule {
   val uint = 0xb4.U
-  val bundle = (new MyBundle).fromBits(uint)
-  printf(p"$bundle") // Bundle(foo -> 11, bar -> 4)
-
-  // Test
-  assert(bundle.foo === 0xb.U)
-  assert(bundle.bar === 0x4.U)
+  val bundle = uint.asTypeOf(new MyBundle)
+}
 ```
 
 ### How do I create a Vec of Bools from a UInt?
 
-Use the builtin function chisel3.core.Bits.toBools to create a Scala Seq of Bool,
-then wrap the resulting Seq in Vec(...)
+Use [`VecInit`](https://www.chisel-lang.org/api/latest/chisel3/VecInit$.html) given a `Seq[Bool]` generated using the [`asBools`](https://www.chisel-lang.org/api/latest/chisel3/UInt.html#asBools():Seq[chisel3.Bool]) method.
 
-```scala
-  // Example
+```scala mdoc:silent:reset
+import chisel3._
+
+class Foo extends RawModule {
   val uint = 0xc.U
-  val vec = Vec(uint.toBools)
-  printf(p"$vec") // Vec(0, 0, 1, 1)
-
-  // Test
-  assert(vec(0) === false.B)
-  assert(vec(1) === false.B)
-  assert(vec(2) === true.B)
-  assert(vec(3) === true.B)
+  val vec = VecInit(uint.asBools)
+}
 ```
 
 ### How do I create a UInt from a Vec of Bool?
 
-Use the builtin function asUInt
+Use the builtin function [`asUInt`](https://www.chisel-lang.org/api/latest/chisel3/Vec.html#asUInt():chisel3.UInt)
 
-```scala
-  // Example
-  val vec = Vec(true.B, false.B, true.B, true.B)
+```scala mdoc:silent:reset
+import chisel3._
+
+class Foo extends RawModule {
+  val vec = VecInit(true.B, false.B, true.B, true.B)
   val uint = vec.asUInt
-  printf(p"$uint") // 13
-
-  /* Test
-   *
-   * (remember leftmost Bool in Vec is low order bit)
-   */
-  assert(0xd.U === uint)
+}
 ```
 
 ## Vectors and Registers
@@ -109,24 +99,24 @@ You create a [Reg of type Vec](#how-do-i-create-a-reg-of-type-vec). Because Vecs
 
 ### How do I create a Reg of type Vec?
 
-For information, please see the API documentation
-(https://chisel.eecs.berkeley.edu/api/index.html#chisel3.core.Vec)
+For more information, the API Documentation for [`Vec`](https://www.chisel-lang.org/api/latest/chisel3/Vec.html) provides more information.
 
-```scala
-  // Reg of Vec of 32-bit UInts without initialization
-  val regOfVec = Reg(Vec(4, UInt(32.W)))
-  regOfVec(0) := 123.U // a couple of assignments
-  regOfVec(2) := regOfVec(0)
+```scala mdoc:silent:reset
+import chisel3._
+
+class Foo extends RawModule {
+  val regOfVec = Reg(Vec(4, UInt(32.W))) // Register of 32-bit UInts
+  regOfVec(0) := 123.U                   // Assignments to elements of the Vec
+  regOfVec(1) := 456.U
+  regOfVec(2) := 789.U
+  regOfVec(3) := regOfVec(0)
 
   // Reg of Vec of 32-bit UInts initialized to zero
   //   Note that Seq.fill constructs 4 32-bit UInt literals with the value 0
   //   VecInit(...) then constructs a Wire of these literals
   //   The Reg is then initialized to the value of the Wire (which gives it the same type)
   val initRegOfVec = RegInit(VecInit(Seq.fill(4)(0.U(32.W))))
-
-  // Simple test (cycle comes from superclass)
-  when (cycle === 2.U) { assert(regOfVec(2) === 123.U) }
-  for (elt <- initRegOfVec) { assert(elt === 0.U) }
+}
 ```
 
 ### How do I create a finite state machine?
