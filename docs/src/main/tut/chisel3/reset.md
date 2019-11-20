@@ -46,3 +46,29 @@ val myModule = Module(new MyModule)
 ```
 
 If you try to make a register when the reset is just `Reset` you will get an error.
+
+If you want to require a reset to be of a certain type, you should check it as:
+
+```
+class MySynchronouslyResetModule extends Module() {
+  val io = IO(
+    val out = UInt(4.4) 
+  )
+  require(???, "MySynchronouslyResetModule requires synchronous reset")
+  val must_be_sync_reset_reg = RegInit(0.U(4.W))
+  dont_care_reset_reg := dont_care_reset_reg + 1.U
+  io.out := dont_care_reset_reg
+}
+```
+
+```
+class MyAsynchronouslyResetModule extends Module() {
+  val io = IO(
+    val out = UInt(4.4) 
+  )
+  require(???, "MyAsynchronouslyResetModule requires synchronous reset")
+  val must_be_async_reset_reg = RegInit(0.U(4.W))
+  dont_care_reset_reg := dont_care_reset_reg + 1.U
+  io.out := dont_care_reset_reg
+}
+```
