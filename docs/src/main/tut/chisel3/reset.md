@@ -67,27 +67,4 @@ withReset(reset.asAsyncReset){
 }
 ```
 
-If you want to require a reset to be of a certain type (vs just casting it),
-you can check it as ??? :
-
-```
-class MySynchronouslyResetModule extends Module() {
-  val io = IO(
-    val out = UInt(4.4) 
-  )
-  require(???, "MySynchronouslyResetModule requires synchronous reset")
-  val must_be_sync_reset_reg = RegInit(0.U(4.W))
-  must_be_sync_reset_reg := must_be_sync_reset_reg + 1.U
-  io.out := must_be_sync_reset_reg
-}
-
-class MyAsynchronouslyResetModule extends Module() {
-  val io = IO(
-    val out = UInt(4.4) 
-  )
-  require(???, "MyAsynchronouslyResetModule requires asynchronous reset")
-  val must_be_async_reset_reg = RegInit(0.U(4.W))
-  must_be_async_reset_reg := must_be_async_reset_reg + 1.U
-  io.out := must_be_async_reset_reg
-}
-```
+There is not currently a way to require a reset to be of a certain type (vs just casting it).
