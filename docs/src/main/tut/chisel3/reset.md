@@ -67,4 +67,15 @@ withReset(reset.asAsyncReset){
 }
 ```
 
-There is not currently a way to require a reset to be of a certain type (vs just casting it).
+If you would like to enforce the reset type from within a Module,
+vs from its instantiator, you can use the `Requires*Reset` traits as follows:
+
+```
+class MyAlwaysSyncResetModule extends Module with RequireSyncReset {
+  val my_sync_reset_reg = RegInit(false.B)
+}
+
+class MyAlwaysAsyncResetModule extends Module with RequireAsyncReset {
+  val my_async_reset_reg = RegInit(false.B)
+}
+```
