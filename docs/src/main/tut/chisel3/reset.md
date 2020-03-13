@@ -79,3 +79,19 @@ class MyAlwaysAsyncResetModule extends Module with RequireAsyncReset {
   val my_async_reset_reg = RegInit(false.B)
 }
 ```
+
+Note, it is *not* legal to override the reset type using last-connect semantics,
+unless you are overriding a `DontCare`:
+
+```
+class MyModule extends Module {
+  val reset_bool = Wire(Reset())
+  reset_bool := DontCare 
+  reset_bool := false.B // this is fine
+  withReset(reset_bool) {
+    val my_submodule = Module(new Submodule())
+  }
+  reset_bool = true.B // this is fine
+  reset_bool = false.B.asAsyncReset // this is not fine
+}
+```
