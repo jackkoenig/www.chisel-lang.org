@@ -68,7 +68,7 @@ withReset(reset.asAsyncReset){
 ```
 
 If you would like to enforce the reset type from within a Module,
-vs from its instantiator, you can use the `Requires*Reset` traits as follows:
+vs from its instantiator, you can use the `Require*Reset` traits as follows:
 
 ```
 class MyAlwaysSyncResetModule extends Module with RequireSyncReset {
