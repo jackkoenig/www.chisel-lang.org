@@ -26,7 +26,7 @@ FIRRTL will infer a concrete type for any signals of type abstract `Reset`.
 The rules are as follows:
 1. An abstract `Reset` with only signals of type `AsyncReset`, abstract `Reset`, and `DontCare`
 in both its fan-in and fan-out will infer to be of type `AsyncReset`
-2. An abstract `Reset` with signals of both typs `Bool` and `AsyncReset` in its fan-in and fan-out
+2. An abstract `Reset` with signals of both types `Bool` and `AsyncReset` in its fan-in and fan-out
 is an error.
 3. Otherwise, an abstract `Reset` will infer to type `Bool`.
 
@@ -42,7 +42,7 @@ Prior to Chisel 3.2.0, a `Module`'s `reset` was of type `Bool`,
 so for backwards compatability, the top-level reset will default to type `Bool`.
 
 If you would like to set the reset type from within a Module (including the top-level `Module`),
-rather than relying on Reset Inference, you can mixin one of the following traits:
+rather than relying on _Reset Inference_, you can mixin one of the following traits:
 * `RequireSyncReset` - sets the type of `reset` to `Bool`
 * `RequireAsyncReset` - sets the type of `reset` to `AsyncReset`
 
@@ -58,18 +58,23 @@ class MyAlwaysAsyncResetModule extends Module with RequireAsyncReset {
 }
 ```
 
-### Examples
+### Reset-Agnostic Code
+
+The purpose of abstract `Reset` is to make it possible to design hardware that is agnostic to the
+reset discipline used.
+This enables code reuse for utilities and designs where the reset discipline does not matter to
+the functionality of the block.
 
 Consider the two example modules below which are agnostic to the type of reset used within them:
 
 ```scala
 class ResetAgnosticModule extends Module() {
-  val io = IO(
-    val out = UInt(4.4) 
-  )
-  val reset_agnostic_reg = RegInit(0.U(4.W))
-  reset_agnostic_reg := reset_agnostic_reg + 1.U
-  io.out := reset_agnostic_reg
+  val io = IO(new Bundle {
+    val out = UInt(4.W) 
+  })
+  val resetAgnosticReg = RegInit(0.U(4.W))
+  resetAgnosticReg := resetAgnosticReg + 1.U
+  io.out := resetAgnosticReg
 }
 
 class ResetAgnosticRawModule extends RawModule {
@@ -77,15 +82,20 @@ class ResetAgnosticRawModule extends RawModule {
   val rst = IO(Input(Reset()))
   val out = IO(Output(UInt(8.W)))
 
-  val reset_agnostic_reg = withClockAndReset(clk, rst)(RegInit(0.U(8.W)))
+  val resetAgnosticReg = withClockAndReset(clk, rst)(RegInit(0.U(8.W)))
   reg := reg + 1.U
-  out := reset_agnostic_reg
+  out := resetAgnosticReg
 }
 ```
-To make registers get the desired kind of reset,
-you can convert into the correct reset types as follows.
 
-This will make both `reset_agnostic_reg` to be synchronously reset:
+These modules can be used in both synchronous and asynchronous reset domains.
+Their reset types will be inferred based on the context within which they are used.
+
+### Forcing Reset Type
+
+You can force the type of the reset at module instantiation by forcing the type
+of the implicit reset.
+The following will make both `resetAgnosticReg`s synchronously reset:
 
 ```scala
 withReset(reset.asBool){
@@ -96,7 +106,7 @@ withReset(reset.asBool){
 }  
 ```
 
-This will make both `reset_agnostic_reg` to be asynchronously reset:
+The following will make both `resetAgnosticReg`s asynchronously reset:
 
 ```scala
 withReset(reset.asAsyncReset){
@@ -107,18 +117,24 @@ withReset(reset.asAsyncReset){
 }
 ```
 
-Note, it is *not* legal to override the reset type using last-connect semantics,
+Note that such cases (`asBool` and `asAsyncReset`) are not checked by FIRRTL.
+In doing such a cast, you as the designer are effectively telling the compiler
+that you know what you are doing and to force the type as cast.
+
+### Last-Connect Semantics
+
+It is **not** legal to override the reset type using last-connect semantics
 unless you are overriding a `DontCare`:
 
 ```scala
 class MyModule extends Module {
-  val reset_bool = Wire(Reset())
-  reset_bool := DontCare 
-  reset_bool := false.B // this is fine
-  withReset(reset_bool) {
-    val my_submodule = Module(new Submodule())
+  val resetBool = Wire(Reset())
+  resetBool := DontCare 
+  resetBool := false.B // this is fine
+  withReset(resetBool) {
+    val mySubmodule = Module(new Submodule())
   }
-  reset_bool = true.B // this is fine
-  reset_bool = false.B.asAsyncReset // this is not fine
+  resetBool = true.B // this is fine
+  resetBool = false.B.asAsyncReset // this is not fine
 }
 ```
